@@ -102,6 +102,26 @@ After you change `config.yaml` or the code, run `stop_app.bat` and then `run_app
 - If the answer isn't in the documents, you get *"I couldn't find this in the documents."* An answer
   without any valid citation shows a warning.
 
+## Deploy online for free (Streamlit Community Cloud + Groq)
+
+Free hosts don't have the RAM to run Ollama, so the online copy gets its answers from **Groq's free API**
+(`llama-3.3-70b-versatile`). Parsing, OCR, embeddings, search and re-ranking still run inside the app.
+Your laptop version keeps using Ollama.
+
+1. Get a free key at https://console.groq.com/keys (no card).
+2. Push this repo to a **private** GitHub repo (`.env`, PDFs and the index are git-ignored).
+3. At https://share.streamlit.io: *Create app* → pick the repo, branch `main`, file `app.py`.
+   Under *Advanced settings*, choose **Python 3.12** (the CPU torch wheel is for 3.12) and paste these secrets:
+   ```toml
+   GROQ_API_KEY = "gsk_..."
+   RAG_CONFIG = "config.cloud.yaml"
+   ```
+4. To share it, use *Share* in the app's top-right to invite people by email (private repo = private app).
+
+`packages.txt` installs Tesseract for OCR. Limits: question text and retrieved chunks are sent to Groq,
+uploaded PDFs are erased when the app restarts or sleeps (after ~12 h with no visitors), and the free Groq tier
+allows roughly 30 questions a minute and 1,000 a day. Every `git push` redeploys automatically.
+
 ## Query from the command line
 
 ```powershell
