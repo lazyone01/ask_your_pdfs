@@ -1,5 +1,7 @@
 # PDF RAG — question answering over research papers
 
+Try it here: https://ask-your-pdfs01.streamlit.app/
+
 Fully local, free and private RAG: PyMuPDF parsing → section-aware chunks → local `bge-small` embeddings →
 ChromaDB + BM25 hybrid search → cross-encoder re-ranking → a local LLM via **Ollama** answers with (file, page) citations.
 No PDF text leaves your machine. Claude (Anthropic API) remains available as a config switch.
