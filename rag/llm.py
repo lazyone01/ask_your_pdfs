@@ -1,4 +1,4 @@
-"""Chat LLM backends (Ollama default; Groq and Anthropic optional) behind one small interface."""
+"""Chat LLM backends (Ollama default; Groq, OpenAI-compatible APIs and Anthropic optional) behind one interface."""
 
 from __future__ import annotations
 
@@ -236,11 +236,80 @@ class GroqLLM(LLM):
         return LLMResponse(strip_reasoning("".join(parts)), model, usage)
 
 
+class OpenAICompatLLM(LLM):
+    """Any OpenAI-compatible chat endpoint (Gemini, Cerebras, OpenRouter...). Used by the cloud deployment."""
+
+    def __init__(self, cfg: GenerationConfig):
+        import openai
+
+        self.cfg = cfg.openai_compat
+        key = os.getenv(self.cfg.api_key_env)
+        if not key:
+            raise LLMError(
+                f"generation.provider is 'openai_compat' ({self.cfg.name}) but {self.cfg.api_key_env} "
+                "is not set (.env or app secrets)"
+            )
+        self.answer_model = self.cfg.answer_model
+        self.rewrite_model = self.cfg.rewrite_model
+        self._openai = openai
+        # The SDK retries 429/5xx/connection errors with exponential backoff.
+        self.client = openai.OpenAI(
+            api_key=key, base_url=self.cfg.base_url,
+            max_retries=self.cfg.max_retries, timeout=self.cfg.timeout_seconds,
+        )
+        self._use_reasoning = bool(self.cfg.reasoning_effort)
+
+    def status(self) -> tuple[bool, str]:
+        return True, f"{self.cfg.name} ready ({self.answer_model})"
+
+    def chat(self, system, messages, model, max_tokens, on_token=None) -> LLMResponse:
+        kwargs = dict(
+            model=model,
+            messages=[{"role": "system", "content": system}, *messages],
+            max_tokens=max_tokens,
+            temperature=self.cfg.temperature,
+            stream=True,
+        )
+        if self._use_reasoning:
+            kwargs["reasoning_effort"] = self.cfg.reasoning_effort
+        name = self.cfg.name
+        try:
+            try:
+                return self._run(kwargs, model, on_token)
+            except self._openai.BadRequestError as e:
+                if "reasoning" not in str(e).lower() or "reasoning_effort" not in kwargs:
+                    raise
+                self._use_reasoning = False  # this model/endpoint doesn't take the flag
+                kwargs.pop("reasoning_effort")
+                return self._run(kwargs, model, on_token)
+        except self._openai.RateLimitError as e:
+            raise LLMError(f"{name} free-tier rate limit reached; wait a minute and try again.") from e
+        except self._openai.APIStatusError as e:
+            raise LLMError(f"{name} API error {e.status_code}: {e.message}") from e
+        except self._openai.APIConnectionError as e:
+            raise LLMError(f"Cannot reach the {name} API (network problem).") from e
+
+    def _run(self, kwargs: dict, model: str, on_token) -> LLMResponse:
+        parts: list[str] = []
+        usage: dict = {}
+        for chunk in self.client.chat.completions.create(**kwargs):
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                parts.append(delta)
+                if on_token:
+                    on_token(delta)
+            if getattr(chunk, "usage", None):
+                usage = {"input_tokens": chunk.usage.prompt_tokens, "output_tokens": chunk.usage.completion_tokens}
+        return LLMResponse(strip_reasoning("".join(parts)), model, usage)
+
+
 def get_llm(cfg: GenerationConfig) -> LLM:
     if cfg.provider == "ollama":
         return OllamaLLM(cfg)
     if cfg.provider == "groq":
         return GroqLLM(cfg)
+    if cfg.provider == "openai_compat":
+        return OpenAICompatLLM(cfg)
     if cfg.provider == "anthropic":
         return AnthropicLLM(cfg)
     raise ValueError(f"Unknown generation provider: {cfg.provider}")

@@ -110,13 +110,27 @@ class GroqConfig(BaseModel):
     timeout_seconds: float = 60
 
 
+class OpenAICompatConfig(BaseModel):
+    """Any OpenAI-compatible chat API. Defaults: Google Gemini's free tier."""
+    name: str = "Gemini"
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    api_key_env: str = "GEMINI_API_KEY"
+    answer_model: str = "gemini-flash-latest"
+    rewrite_model: str = "gemini-flash-lite-latest"
+    temperature: float = 0.0
+    reasoning_effort: str = ""  # e.g. "low" for thinking models; empty = provider default
+    max_retries: int = 4
+    timeout_seconds: float = 90
+
+
 class GenerationConfig(BaseModel):
-    provider: Literal["ollama", "groq", "anthropic"] = "ollama"
+    provider: Literal["ollama", "groq", "openai_compat", "anthropic"] = "ollama"
     history_turns: int = 3
     max_tokens: int = 1000
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
     groq: GroqConfig = Field(default_factory=GroqConfig)
+    openai_compat: OpenAICompatConfig = Field(default_factory=OpenAICompatConfig)
 
 
 class LoggingConfig(BaseModel):

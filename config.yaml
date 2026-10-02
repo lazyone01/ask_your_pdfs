@@ -60,7 +60,7 @@ retrieval:
   top_k: 6                      # chunks finally sent to the LLM
 
 generation:
-  provider: ollama              # ollama (local, free, private) | groq (free API, needs key) | anthropic (API, needs key)
+  provider: ollama              # ollama (local, free, private) | groq | openai_compat (free APIs, need a key) | anthropic (API, needs key)
   history_turns: 3              # previous Q/A pairs used to rewrite follow-up questions
   max_tokens: 1000
   ollama:
@@ -78,6 +78,16 @@ generation:
     temperature: 0.0
     max_retries: 4
     timeout_seconds: 60
+  openai_compat:                # any OpenAI-compatible API; defaults to Google Gemini's free tier
+    name: Gemini
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    api_key_env: GEMINI_API_KEY   # free key at https://aistudio.google.com/apikey
+    answer_model: gemini-flash-latest       # alias that always points at the current Flash model
+    rewrite_model: gemini-flash-lite-latest
+    temperature: 0.0
+    reasoning_effort: low       # Flash "thinks" first; low keeps answers fast
+    max_retries: 4
+    timeout_seconds: 90
   anthropic:
     answer_model: claude-sonnet-5
     rewrite_model: claude-haiku-4-5-20251001
