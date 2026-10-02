@@ -1,0 +1,30 @@
+# Python 3.11-3.13 recommended (tested on 3.12). Versions pinned 2026-09.
+
+# PDF parsing (+ OCR via Tesseract when parsing.ocr.enabled)
+pymupdf==1.28.2
+
+# Embeddings + re-ranker (local, CPU). On Windows the PyPI torch wheel is CPU-only.
+torch==2.14.0; sys_platform != "linux"
+# Linux (Streamlit Cloud): CPU-only build; the default Linux wheel pulls ~4 GB of CUDA libraries.
+torch @ https://download.pytorch.org/whl/cpu/torch-2.14.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl; sys_platform == "linux"
+sentence-transformers==6.1.0
+# API embeddings (only needed if embedding.provider: voyage)
+voyageai==0.5.0
+
+# Vector DB + keyword search
+chromadb==1.5.9
+rank-bm25==0.2.2
+
+# LLM: Ollama (default, local), Groq (free API, used on Streamlit Cloud) or Anthropic (optional API)
+ollama==0.6.2
+anthropic==1.8.0
+groq==1.7.0
+
+# UI + evaluation
+streamlit==1.64.0
+pandas==3.0.6
+
+# Config
+pydantic==2.13.5
+pyyaml==6.0.3
+python-dotenv==1.2.3

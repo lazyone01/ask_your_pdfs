@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.env
+storage/
+logs/
+data/pdfs/*
+!data/pdfs/.gitkeep
+eval/results/

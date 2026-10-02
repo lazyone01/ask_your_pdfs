@@ -1,0 +1,6 @@
+[server]
+port = 8501
+maxUploadSize = 200   # MB per file
+
+[browser]
+gatherUsageStats = false
